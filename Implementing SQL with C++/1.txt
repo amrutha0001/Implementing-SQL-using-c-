@@ -1,0 +1,216 @@
+#include <vector>
+#include <string>
+#include <fstream>
+#include <iostream>
+using namespace std;
+
+class TableChecker {
+public:
+    bool doesTableExists(string tableName) {
+        fstream SchemaFile;
+        SchemaFile.open("SchemaFile.txt", ios::in);
+        if (SchemaFile) {
+            string line;
+            while (!SchemaFile.eof()) {
+                getline(SchemaFile, line);
+                if (line[0] == '*') {
+                    string name = line.substr(1, line.size() - 2);
+                    if (name == tableName) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            cout << "Schema File doesn't exist" << endl;
+        }
+        SchemaFile.close();
+        return false;
+    }
+};
+
+class ErrorChecker {
+public:
+    ErrorChecker() {}
+    bool ErrorsChecking(vector<string>& Tokens) {
+        if (Tokens.empty())
+            return false;
+
+        TableChecker tableChecker;
+
+        if (Tokens[0] == "create" && Tokens[1] == "table") {
+
+            //Error 1 : Checking whether table with specified name exists in Schema file or not
+            if (tableChecker.doesTableExists(Tokens[2])) {
+                cout << "table <" << Tokens[2] << "> already exists" << endl;
+                cout << "Table not created" << endl;
+                return false;
+            }
+
+            //Error 2 : Checking whether PK attribute is defined or not
+            int Tsize = Tokens.size();
+            if (Tokens[Tsize - 3] != "primary" && Tokens[Tsize - 2] != "key") {
+                cout << "Defining PK is mandatory" << endl;
+                cout << "Table not created" << endl;
+                return false;
+            }
+        }
+
+        else if (Tokens[0] == "drop" && Tokens[1] == "table") {
+            //Error 1 : Checking whether table with specified name exists in Schema file or not
+            if (!tableChecker.doesTableExists(Tokens[2])) {
+                cout << "table <" << Tokens[2] << "> doesn't exists" << endl;
+                cout << "Table not dropped" << endl;
+                return false;
+            }
+        }
+
+        else if (Tokens[0] == "describe") {
+            //Error 1 : Checking whether table with specified name exists in Schema file or not
+            if (!tableChecker.doesTableExists(Tokens[1])) {
+                cout << "table <" << Tokens[1] << "> doesn't exists" << endl;
+                cout << "Table cannot be described" << endl;
+                return false;
+            }
+        }
+
+        else if (Tokens[0] == "insert" && Tokens[1] == "into") {
+            //Error 1 : Checking whether table with specified name exists in Schema file or not
+            if (!tableChecker.doesTableExists(Tokens[2])) {
+                cout << "table <" << Tokens[2] << "> doesn't exists" << endl;
+                cout << "Tuple not inserted" << endl;
+                return false;
+            }
+            //Other errors handling done in insert function itself.
+        }
+        
+        else if(Tokens[0]=="select")
+        {
+            //All errors are handled in Select function itself
+        }
+
+        else if(Tokens[0]=="help" && Tokens[1]=="tables")
+        {
+
+        }
+
+        else if(Tokens[0]=="help")
+        {}
+
+        else if (Tokens[0] == "update") {
+            if (!tableChecker.doesTableExists(Tokens[1])) {
+                cout << "table <" << Tokens[1] << "> doesn't exists" << endl;
+                cout << "0 rows affected" << endl;
+                return false;
+            }
+        }
+            else if(Tokens[0]=="quit")
+        {}
+        else
+        {}
+        return true;
+    }
+};
+
+
+
+
+
+
+
+
+
+int InsertInto(vector<string>&Tokens)
+{
+    //If control comes here, means the specified table exists in schema file;
+    //1.Checking whether primary key already exists in the table or not
+    fstream table;
+    table.open(Tokens[2]+".txt",ios::in);
+    string tuple;
+    string temp = Tokens[2]+".txt";
+    
+    while(table && !table.eof())
+    {
+        getline(table,tuple);
+        if(Tokens[4]==ExtractCol(tuple,0))//0 means primary key
+        {
+            cout<<"PK already exists"<<endl;
+            table.close();
+            return 0;
+        }
+    }
+
+    //error handling2 : Checking whether the values are specified according to the Schema..
+    int noOfAttributes = Count_no_Attributes(Tokens[2]);
+    if( Tokens.size()-4 < noOfAttributes )
+    {cout<<"Less Values Specified"<<endl;return 0;}
+        
+    if( Tokens.size()-4 > noOfAttributes )
+    {cout<<"More Values Specified"<<endl;return 0;}
+    
+    if(!checkValuesOrder(Tokens))
+    {cout<<"Values not specified in proper order"<<endl;return 0;}
+
+    //3.If the control comes here, there are no errors
+    //  And we can append the tuple;
+    fstream TABLE;
+    TABLE.open(Tokens[2]+".txt",ios::app);
+    TABLE <<"<";
+
+    int i=4;
+    while(i<Tokens.size()-1)
+    {
+        TABLE << Tokens[i] <<",";
+        i++;
+    }
+    TABLE << Tokens[i] << ">" << endl;
+
+    TABLE.close();
+    return 1; 
+}
+
+
+
+
+
+
+
+
+
+void FillingAttributesOfTable(string tableName)
+{
+    attributes_of_table.clear();
+    fstream SchemaFile;
+    SchemaFile.open("SchemaFile.txt",ios::in);
+    string line;
+    while(!SchemaFile.eof())
+    {
+        getline(SchemaFile,line);
+        if(line[0]=='*')
+        {
+            string name = line.substr(1,line.size()-2);
+            if(name==tableName)
+            {
+                getline(SchemaFile,line);//<<
+                getline(SchemaFile,line);//pk: 
+
+                while(line!=">>")
+                {
+                    getline(SchemaFile,line);
+                    if(line==">>")break;
+
+                    string temp="";
+                    int i=0;
+                    while(line[i]!=' ')
+                    {
+                        temp += line[i];
+                        i++;
+                    }
+                    attributes_of_table.push_back(temp);
+                }
+
+                SchemaFile.close();
+                break;
+            }
+        }
+    }
+}

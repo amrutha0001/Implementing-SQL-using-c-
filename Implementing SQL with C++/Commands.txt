@@ -1,0 +1,14 @@
+create table Employee(empId int,name varchar(30),dob date,salary decimal(7,2),primary key(empId));
+insert into Employee values(100,"ADAM",24-02-2001,50000.00);
+insert into Employee values(101,"JESSICA",21-01-2001,80000.00);
+insert into Employee values(102,"EVE",25-05-2000,57000.70);
+insert into Employee values(103,"SAGAR",28-09-2004,69000.00);
+insert into Employee values(104,"JENNY",24-02-2002,77000.90);
+select * from Employee;
+select * from Employee where salary > 55000;
+select name,salary from Employee where salary < 55000;
+describe Employee;
+help create table;
+delete from Employee where name = "ADAM";
+select * from Employee;
+drop table Employee;
